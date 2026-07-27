@@ -69,6 +69,112 @@ export class Game {
         this.restart();
       }
     });
+
+    this._initMobileControls();
+  }
+
+  _initMobileControls() {
+    const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+
+    const mobileUI = document.getElementById("mobile-controls");
+    if (mobileUI) {
+      mobileUI.style.display = isMobile ? "block" : "none";
+    }
+
+    if (!isMobile) return;
+
+    const shootBtn = document.getElementById("btn-shoot");
+    const interactBtn = document.getElementById("btn-interact");
+    const flashBtn = document.getElementById("btn-flash");
+    const joystickArea = document.getElementById("joystick-area");
+    const joystickKnob = document.getElementById("joystick-knob");
+
+    if (shootBtn) {
+      shootBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        this.player.mouseButtons.left = true;
+      }, { passive: false });
+      shootBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        this.player.mouseButtons.left = false;
+      }, { passive: false });
+    }
+
+    if (interactBtn) {
+      interactBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        this.player.triggerInteract();
+      }, { passive: false });
+    }
+
+    if (flashBtn) {
+      flashBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        this.player.flashlightOn = !this.player.flashlightOn;
+      }, { passive: false });
+    }
+
+    const sprintBtn = document.getElementById("btn-sprint");
+    if (sprintBtn) {
+      sprintBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        this.player.keys["shift"] = true;
+      }, { passive: false });
+      sprintBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        this.player.keys["shift"] = false;
+      }, { passive: false });
+    }
+
+    if (joystickArea && joystickKnob) {
+      let joystickTouchId = null;
+      let joystickCenter = { x: 0, y: 0 };
+      const maxDist = 50;
+
+      joystickArea.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+        const rect = joystickArea.getBoundingClientRect();
+        joystickCenter.x = rect.left + rect.width / 2;
+        joystickCenter.y = rect.top + rect.height / 2;
+      }, { passive: false });
+
+      joystickArea.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        for (const touch of e.changedTouches) {
+          if (touch.identifier === joystickTouchId) {
+            let dx = touch.clientX - joystickCenter.x;
+            let dy = touch.clientY - joystickCenter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > maxDist) {
+              dx = (dx / dist) * maxDist;
+              dy = (dy / dist) * maxDist;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            this.player.touchMove.x = dx / maxDist;
+            this.player.touchMove.y = dy / maxDist;
+          }
+        }
+      }, { passive: false });
+
+      const resetJoystick = (e) => {
+        e.preventDefault();
+        for (const touch of e.changedTouches) {
+          if (touch.identifier === joystickTouchId) {
+            joystickTouchId = null;
+            joystickKnob.style.transform = "translate(0px, 0px)";
+            this.player.touchMove.x = 0;
+            this.player.touchMove.y = 0;
+          }
+        }
+      };
+      joystickArea.addEventListener("touchend", resetJoystick, { passive: false });
+      joystickArea.addEventListener("touchcancel", resetJoystick, { passive: false });
+    }
   }
 
   start() {

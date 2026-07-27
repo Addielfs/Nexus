@@ -446,6 +446,114 @@
     }
 
     .pulse { animation: pulse 2s ease-in-out infinite; }
+
+    #mobile-controls {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+    }
+
+    #joystick-area {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: rgba(0, 255, 204, 0.08);
+      border: 2px solid rgba(0, 255, 204, 0.25);
+      pointer-events: all;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #joystick-knob {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(0, 255, 204, 0.3);
+      border: 2px solid rgba(0, 255, 204, 0.6);
+      transition: transform 0.05s ease;
+      will-change: transform;
+    }
+
+    .mobile-btn {
+      position: absolute;
+      pointer-events: all;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border: 2px solid;
+    }
+
+    #btn-shoot {
+      bottom: 40px;
+      right: 30px;
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 51, 102, 0.15);
+      border-color: rgba(255, 51, 102, 0.6);
+      color: var(--c-danger);
+    }
+
+    #btn-interact {
+      bottom: 135px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 255, 204, 0.12);
+      border-color: rgba(0, 255, 204, 0.5);
+      color: var(--c-primary);
+    }
+
+    #btn-flash {
+      bottom: 135px;
+      right: 105px;
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 170, 34, 0.12);
+      border-color: rgba(255, 170, 34, 0.5);
+      color: var(--c-warning);
+    }
+
+    #btn-sprint {
+      bottom: 135px;
+      left: 90px;
+      width: 55px;
+      height: 55px;
+      background: rgba(68, 221, 255, 0.12);
+      border-color: rgba(68, 221, 255, 0.5);
+      color: var(--c-energy);
+    }
+
+    .mobile-btn:active {
+      background: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    @media (max-width: 768px) {
+      .overlay-title { font-size: 36px; letter-spacing: 6px; }
+      .overlay-subtitle { font-size: 11px; }
+      .overlay-btn { font-size: 13px; padding: 14px 36px; }
+      .hud { padding: 8px; }
+      .card { padding: 5px 8px; }
+      .card-title { font-size: 7px; }
+      .card-value { font-size: 14px; }
+      .bar-container { height: 4px; }
+      .monster-name { font-size: 9px; }
+      .controls-card { display: none; }
+      .hud-bottom { flex-direction: column; gap: 4px; }
+      .log-card { font-size: 9px; }
+    }
   </style>
   <script type="importmap">
   {
@@ -579,6 +687,16 @@
     <div class="victory-title">ESCAPASTE</div>
     <div class="victory-sub">EL SISTEMA HA SIDO LIBERADO</div>
     <button class="overlay-btn" id="victory-btn">JUGAR DE NUEVO</button>
+  </div>
+
+  <div id="mobile-controls">
+    <div id="joystick-area">
+      <div id="joystick-knob"></div>
+    </div>
+    <div id="btn-sprint" class="mobile-btn">SPR</div>
+    <div id="btn-flash" class="mobile-btn">F</div>
+    <div id="btn-interact" class="mobile-btn">E</div>
+    <div id="btn-shoot" class="mobile-btn">FIRE</div>
   </div>
 
   <script type="module">
