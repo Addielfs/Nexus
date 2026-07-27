@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --c-bg: #050510;
+      --c-primary: #00ffcc;
+      --c-danger: #ff3366;
+      --c-warning: #ffaa22;
+      --c-energy: #44ddff;
+      --c-health: #ff4466;
+      --c-battery: #44ffaa;
+      --c-text: #ccddff;
+      --c-dim: #334466;
+      --c-panel: rgba(5, 8, 25, 0.85);
+      --c-panel-border: rgba(0, 255, 204, 0.15);
+      --font-hud: 'Orbitron', monospace;
+      --font-mono: 'Share Tech Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--c-bg);
+      overflow: hidden;
+      cursor: default;
+      font-family: var(--font-mono);
+      color: var(--c-text);
+      user-select: none;
+    }
+
+    body.game-active {
+      cursor: none;
+    }
+
+    #game {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    #game canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .crosshair {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .crosshair::before, .crosshair::after {
+      content: '';
+      position: absolute;
+      background: var(--c-primary);
+      opacity: 0.7;
+      box-shadow: 0 0 6px var(--c-primary);
+    }
+
+    .crosshair::before {
+      width: 2px; height: 18px;
+      top: -9px; left: -1px;
+    }
+
+    .crosshair::after {
+      width: 18px; height: 2px;
+      top: -1px; left: -9px;
+    }
+
+    .crosshair-dot {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: var(--c-primary);
+      border-radius: 50%;
+      top: -2px; left: -2px;
+      box-shadow: 0 0 8px var(--c-primary);
+    }
+
+    .hud {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hud-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 280px;
+    }
+
+    .hud-col.right {
+      align-items: flex-end;
+    }
+
+    .card {
+      background: var(--c-panel);
+      border: 1px solid var(--c-panel-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      backdrop-filter: blur(4px);
+    }
+
+    .card-title {
+      font-family: var(--font-hud);
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--c-dim);
+      margin-bottom: 4px;
+    }
+
+    .card-value {
+      font-family: var(--font-hud);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--c-primary);
+    }
+
+    .card-value.danger { color: var(--c-danger); }
+    .card-value.warning { color: var(--c-warning); }
+    .card-value.energy { color: var(--c-energy); }
+
+    .bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.2s ease;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .title-card {
+      text-align: center;
+      padding: 10px 20px;
+    }
+
+    .title-card .card-title {
+      font-size: 7px;
+      letter-spacing: 4px;
+    }
+
+    .title-card .card-value {
+      font-size: 14px;
+      color: var(--c-primary);
+      text-shadow: 0 0 12px var(--c-primary);
+    }
+
+    .map-card {
+      text-align: center;
+    }
+
+    .map-card .card-value {
+      font-size: 11px;
+      color: var(--c-energy);
+      text-shadow: 0 0 8px var(--c-energy);
+    }
+
+    .energy-card {
+      border-color: rgba(68, 221, 255, 0.2);
+    }
+
+    .energy-card .bar-fill {
+      background: var(--c-energy);
+    }
+
+    .allies-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-hud);
+      font-size: 13px;
+    }
+
+    .allies-row .found {
+      color: var(--c-primary);
+      text-shadow: 0 0 6px var(--c-primary);
+    }
+
+    .allies-row .total {
+      color: var(--c-dim);
+    }
+
+    .monster-card {
+      border-color: rgba(255, 51, 102, 0.2);
+    }
+
+    .monster-name {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c-danger);
+      text-shadow: 0 0 8px rgba(255,51,102,0.5);
+      letter-spacing: 1px;
+    }
+
+    .monster-state {
+      font-size: 10px;
+      color: var(--c-warning);
+      margin-top: 2px;
+    }
+
+    .hud-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 60;
+    }
+
+    .center-msg {
+      font-family: var(--font-hud);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--c-primary);
+      text-shadow: 0 0 20px var(--c-primary), 0 0 40px rgba(0,255,204,0.3);
+      letter-spacing: 3px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .center-msg.visible {
+      opacity: 1;
+    }
+
+    .hud-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .hud-bottom-left {
+      flex: 1;
+      max-width: 350px;
+    }
+
+    .hud-bottom-right {
+      flex: 0;
+    }
+
+    .ammo-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+    }
+
+    .ammo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--c-danger);
+      clip-path: polygon(50% 0%, 100% 35%, 100% 100%, 0% 100%, 0% 35%);
+      opacity: 0.8;
+    }
+
+    .ammo-count {
+      font-family: var(--font-hud);
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--c-danger);
+      text-shadow: 0 0 10px rgba(255,51,102,0.5);
+    }
+
+    .log-card {
+      font-size: 11px;
+      color: var(--c-dim);
+      line-height: 1.4;
+    }
+
+    .controls-card {
+      font-size: 9px;
+      color: var(--c-dim);
+      letter-spacing: 1px;
+      text-align: right;
+    }
+
+    .interact-hint {
+      position: fixed;
+      bottom: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-hud);
+      font-size: 13px;
+      color: var(--c-primary);
+      text-shadow: 0 0 12px var(--c-primary);
+      letter-spacing: 2px;
+      z-index: 55;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .interact-hint.visible {
+      opacity: 1;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, rgba(5,8,25,0.95), rgba(5,5,16,0.99));
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay.hidden { display: none; }
+
+    .overlay-title {
+      font-family: var(--font-hud);
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--c-primary);
+      text-shadow: 0 0 40px var(--c-primary), 0 0 80px rgba(0,255,204,0.3);
+      letter-spacing: 12px;
+      margin-bottom: 8px;
+    }
+
+    .overlay-subtitle {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--c-dim);
+      letter-spacing: 4px;
+      margin-bottom: 40px;
+    }
+
+    .overlay-btn {
+      font-family: var(--font-hud);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      padding: 16px 48px;
+      background: transparent;
+      color: var(--c-primary);
+      border: 2px solid var(--c-primary);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      pointer-events: all;
+    }
+
+    .overlay-btn:hover {
+      background: var(--c-primary);
+      color: var(--c-bg);
+      box-shadow: 0 0 30px rgba(0,255,204,0.4);
+    }
+
+    .overlay-controls {
+      margin-top: 32px;
+      font-size: 11px;
+      color: var(--c-dim);
+      text-align: center;
+      line-height: 2;
+      letter-spacing: 1px;
+    }
+
+    .overlay-controls span {
+      color: var(--c-primary);
+    }
+
+    .gameover-title {
+      font-family: var(--font-hud);
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--c-danger);
+      text-shadow: 0 0 40px var(--c-danger);
+      letter-spacing: 8px;
+      margin-bottom: 12px;
+    }
+
+    .victory-title {
+      font-family: var(--font-hud);
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--c-primary);
+      text-shadow: 0 0 40px var(--c-primary);
+      letter-spacing: 8px;
+      margin-bottom: 12px;
+    }
+
+    .victory-sub {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--c-energy);
+      margin-bottom: 32px;
+    }
+
+    .scanline {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+    }
+
+    .vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="game"></div>
+
+  <div class="scanline"></div>
+  <div class="vignette"></div>
+
+  <div class="crosshair">
+    <div class="crosshair-dot"></div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-top">
+      <div class="hud-col">
+        <div class="card title-card">
+          <div class="card-title">SISTEMA</div>
+          <div class="card-value">NEXUS</div>
+        </div>
+        <div class="card map-card">
+          <div class="card-title">SECTOR</div>
+          <div class="card-value" id="hud-map-name">---</div>
+        </div>
+        <div class="card energy-card">
+          <div class="card-title">LLAVE DE ESCAPE</div>
+          <div class="bar-container">
+            <div class="bar-fill" id="hud-energy-fill" style="width: 0%; background: var(--c-energy);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+            <span id="hud-energy-text" style="font-size:10px; color:var(--c-energy);">0%</span>
+            <div class="allies-row">
+              <span>PIEZAS</span>
+              <span class="found" id="hud-pieces-found">0</span>
+              <span class="total" id="hud-pieces-total">/ 5</span>
+            </div>
+          </div>
+          <div id="hud-key-status" style="font-family:var(--font-hud); font-size:9px; color:#ffaa22; margin-top:4px; letter-spacing:1px;">Ensamblando...</div>
+        </div>
+      </div>
+
+      <div class="hud-col right">
+        <div class="card monster-card">
+          <div class="card-title">ENTIDAD DETECTADA</div>
+          <div class="monster-name" id="hud-monster-name">NINGUNA</div>
+          <div class="monster-state" id="hud-monster-state">---</div>
+          <div style="font-size:9px; color:var(--c-dim); margin-top:2px;" id="hud-monster-count">0 activos</div>
+        </div>
+        <div class="card">
+          <div class="card-title">VIDA</div>
+          <div class="bar-container">
+            <div class="bar-fill" id="hud-hp-fill" style="width: 100%; background: var(--c-health);"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:3px;">
+            <span id="hud-hp-text" style="font-size:10px; color:var(--c-health);">100%</span>
+            <span id="hud-lives-text" style="font-size:10px; color:var(--c-dim);">3 / 3</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">BATERÍA</div>
+          <div class="bar-container">
+            <div class="bar-fill" id="hud-battery-fill" style="width: 100%; background: var(--c-battery);"></div>
+          </div>
+          <div id="hud-battery-text" style="font-size:10px; color:var(--c-battery); margin-top:3px;">100%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <div class="center-msg" id="hud-center-msg"></div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="hud-bottom-left">
+        <div class="card log-card" id="hud-log">Inicializando sistema...</div>
+        <div class="card controls-card" style="margin-top: 6px;">
+          <span style="color:var(--c-primary);">WASD</span> Mover &nbsp;
+          <span style="color:var(--c-primary);">MOUSE</span> Mirar &nbsp;
+          <span style="color:var(--c-primary);">SHIFT</span> Correr &nbsp;
+          <span style="color:var(--c-primary);">E</span> Interactuar &nbsp;
+          <span style="color:var(--c-primary);">F</span> Linterna &nbsp;
+          <span style="color:var(--c-primary);">CLICK</span> Disparar
+        </div>
+      </div>
+      <div class="hud-bottom-right">
+        <div class="card ammo-card" id="hud-ammo">
+          <div class="ammo-icon"></div>
+          <div class="ammo-count" id="hud-ammo-count">15</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="interact-hint" id="hud-interact-hint"></div>
+
+  <div class="look-badge" id="look-badge" style="display:none; position:fixed; bottom:38%; left:50%; transform:translateX(-50%); z-index:55; text-align:center; pointer-events:none;">
+    <div style="font-family:var(--font-hud); font-size:14px; color:var(--c-primary); text-shadow:0 0 12px var(--c-primary); letter-spacing:2px; animation: pulse 1.5s ease-in-out infinite;">
+      CLICK PARA MIRAR ALREDEDOR
+    </div>
+    <div style="font-size:10px; color:var(--c-dim); margin-top:4px;">WASD para moverte</div>
+  </div>
+
+  <div class="overlay" id="start-overlay">
+    <div class="overlay-title pulse">NEXUS</div>
+    <div class="overlay-subtitle"></div>
+    <button class="overlay-btn" id="start-btn">COMENZAR</button>
+    <div class="overlay-controls">
+      <span>WASD</span> Mover &nbsp;&bull;&nbsp;
+      <span>MOUSE</span> Mirar &nbsp;&bull;&nbsp;
+      <span>SHIFT</span> Correr<br>
+      <span>E</span> Interactuar &nbsp;&bull;&nbsp;
+      <span>F</span> Linterna &nbsp;&bull;&nbsp;
+      <span>CLICK</span> Disparar &nbsp;&bull;&nbsp;
+      <span>R</span> Reiniciar
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="gameover-overlay">
+    <div class="gameover-title">GAME OVER</div>
+    <div class="overlay-subtitle">EL LABERINTO TE CONSUMIÓ</div>
+    <button class="overlay-btn" id="restart-btn" style="border-color: var(--c-danger); color: var(--c-danger);">REINTENTAR</button>
+  </div>
+
+  <div class="overlay hidden" id="victory-overlay">
+    <div class="victory-title">ESCAPASTE</div>
+    <div class="victory-sub">EL SISTEMA HA SIDO LIBERADO</div>
+    <button class="overlay-btn" id="victory-btn">JUGAR DE NUEVO</button>
+  </div>
+
+  <script type="module">
+    import { Game } from './src/main.js';
+    const game = new Game();
+    game.init();
+  </script>
+</body>
+</html>
