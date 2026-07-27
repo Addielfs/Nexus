@@ -74,13 +74,8 @@ export class Game {
   }
 
   _initMobileControls() {
-    const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) ||
-      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-
-    const mobileUI = document.getElementById("mobile-controls");
-    if (mobileUI) {
-      mobileUI.style.display = isMobile ? "block" : "none";
-    }
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0 ||
+      /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
 
     if (!isMobile) return;
 

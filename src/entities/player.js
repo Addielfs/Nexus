@@ -38,8 +38,8 @@ export class Player {
 
     this.mouseButtons = { left: false, right: false };
 
-    this.isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) ||
-      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+    this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0 ||
+      /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
 
     this.touchLook = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
     this.touchMove = { x: 0, y: 0 };

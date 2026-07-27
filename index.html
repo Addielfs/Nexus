@@ -455,6 +455,10 @@
       pointer-events: none;
     }
 
+    .touch-device #mobile-controls {
+      display: block;
+    }
+
     #joystick-area {
       position: absolute;
       bottom: 30px;
@@ -701,6 +705,8 @@
 
   <script type="module">
     import { Game } from './src/main.js';
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
+    if (isMobile) document.body.classList.add('touch-device');
     const game = new Game();
     game.init();
   </script>
